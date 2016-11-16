@@ -72,6 +72,34 @@ export function changeset(obj, validateFn = defaultValidatorFn, validationMap = 
       this[ERRORS] = {};
       this[VALIDATOR] = validateFn;
     },
+    //Work around for validations on attr    
+    validations: Ember.computed(function () {
+      return {
+        isValid: Ember.computed.alias('attrs.changeset.isValid'),
+        isInvalid: Ember.computed.alias('attrs.changeset.isInvalid'),
+        isDirty: Ember.computed.alias('attrs.changeset.isDirty'),
+        errors: Ember.computed.alias('attrs.changeset.errors'),
+        messages: Ember.computed('attrs.changeset.errors', function () {
+          return get(this, 'attrs.changeset.errors').map((error) => {
+            return get(error, 'validation');
+          });
+        }),
+        attrs: {
+          changeset: this,
+          unknownProperty(key) {
+            return {
+              changeset: get(this, 'changeset'),
+              property: Ember.computed('changeset.errors', function () {
+                return get(this, 'changeset.errors').findBy('key', key);
+              }),
+              isValid: Ember.computed.not('property'),
+              isInvalid: Ember.computed.not('isValid'),
+              message: Ember.computed.alias('property.validation'),
+            };
+          }
+        }
+      };
+    }),
 
     /**
      * Proxies `get` to the underlying content or changed value, if present.
